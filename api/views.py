@@ -7,7 +7,7 @@ from .models import GoodsCategory, Goods, GoodsStat, CategoryStat, Category, Use
 # Create your views here.
 
 
-def index(request):
+def goods_cart(request):
     """Информация о карточке товара"""
     goodsId = 1
     name = 'Пульсометр'
@@ -30,7 +30,7 @@ def index(request):
     rating = [4.50, 4.21, 4.00, 4.12, 4.23, 4.36, 4.76]
     remainder = [100, 70, 40, 120, 100, 80, 140]
     sales = [0, 30, 30, 40, 20, 20, 45]
-    date = ['25.12.2020', '24.12.2020', '23.12.2020', '22.12.2020', '21.12.2020', '20.12.2020', '19.12.2020',]
+    date = ['25.12.2020', '24.12.2020', '23.12.2020', '22.12.2020', '21.12.2020', '20.12.2020', '19.12.2020']
     revenue = [0, 130000, 150000, 120000, 100000, 1350000, 170000]
     image = ['https://www.google.com/aclk?sa=l&ai=DChcSEwj06qnn1ujtAhWXn7IKHXLIDysYABAHGgJscg&sig=AOD64_0ksGNQbAs_fexm6LPBlK5cdt6jzw&adurl&ctype=5&ved=2ahUKEwiZ8J_n1ujtAhVIxyoKHU9DDlUQwg96BAgBEDc']
 
@@ -54,4 +54,19 @@ def index(request):
     }
 
     # Render the HTML template index.html with the data in the context variable
+    return JsonResponse(context)
+
+
+def goods_lite(request):
+    """Метод получения данных для лайт версии карточки товара(расширение)."""
+    remainder = [100, 70, 40, 120, 100, 80, 140]
+    sales = [0, 30, 30, 40, 20, 20, 45]
+    date = ['25.12.2020', '24.12.2020', '23.12.2020', '22.12.2020', '21.12.2020', '20.12.2020', '19.12.2020' ]
+    revenue = [0, 130000, 150000, 120000, 100000, 1350000, 170000]
+    context = {
+        'remainder': remainder,
+        'sales': sales,
+        'date': date,
+        'revenue': revenue,
+    }
     return JsonResponse(context)

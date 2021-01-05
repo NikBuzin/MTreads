@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
-import MT.config as config
+import configparser
+# import MT.config as config
+
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,11 +79,11 @@ WSGI_APPLICATION = 'MT.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': config.NAME,
-        'USER': config.USER,
-        'PASSWORD': config.PASSWORD,
-        'HOST': config.HOST,
-        'PORT': config.PORT,
+        'NAME': config["setting"]["NAME"],
+        'USER': config["setting"]["USER"],
+        'PASSWORD': config["setting"]["PASSWORD"],
+        'HOST': config["setting"]["HOST"],
+        'PORT': config["setting"]["PORT"],
     }
 }
 

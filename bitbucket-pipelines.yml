@@ -19,4 +19,4 @@ pipelines:
       - step:
           name: Script
           script: 
-              - init.sh
+              - bash init.sh

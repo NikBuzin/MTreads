@@ -16,3 +16,7 @@ pipelines:
                 LOCAL_PATH: '${BITBUCKET_CLONE_DIR}'
                 DEBUG: 'true'
                 EXTRA_ARGS: '-P 2174'
+      - step:
+          name: Script
+          script: 
+              - init.sh

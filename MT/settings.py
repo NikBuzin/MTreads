@@ -14,12 +14,12 @@ import os
 import configparser
 # import MT.config as config
 
-try:
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-except ImportError:
-    pass
-    
+# try:
+config = configparser.ConfigParser()
+config.read("config.ini")
+# except ImportError:
+#     pass
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,9 +30,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '1p-wd+_aneuflrcg@0%-ubn#c%557*!5(o0r(s#b1_fd8-o-px'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api.mtrends.ru']
 
 # Application definition
 

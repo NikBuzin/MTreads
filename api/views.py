@@ -255,7 +255,7 @@ def goods_lite(request):
     print(time.time() - start)
     return JsonResponse(OrderedDict(context))
 
-
+@csrf_exempt
 def goods_list(request):
     """Информация о нескольких карточках товара"""
     goods = {

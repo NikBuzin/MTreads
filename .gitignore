@@ -3,6 +3,11 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+venv/
+__pycache__/
+*.py[cod]
+congig.ini
+
 # Node artifact files
 node_modules/
 dist/
@@ -47,4 +52,3 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
-

@@ -1,11 +1,21 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from  django.db import models
+from  django.db import models, connection
+from django.views.decorators.csrf import csrf_exempt
+from collections import OrderedDict
 
 from .models import GoodsCategory, Goods, GoodsStat, CategoryStat, Category, UserRole, Users, Brand, Stock, Role, Seller, Position
 
+import json, time
 # Create your views here.
 
+def dictfetchall(cursor):
+    "Returns all rows from a cursor as a dict"
+    desc = cursor.description
+    return [
+            dict(zip([col[0] for col in desc], row))
+            for row in cursor.fetchall()
+    ]
 
 def goods_cart(request):
     """Информация о карточке товара"""
@@ -193,49 +203,57 @@ def goods_cart(request):
     return JsonResponse(context)
 
 
+@csrf_exempt
 def goods_lite(request):
-    """Метод получения данных для лайт версии карточки товара(расширение)."""
-    date = {
-        '25.12.2020': {
-            'revenue': 0,
-            'sales': 0,
-            'remainder': 100
-        },
-        '24.12.2020': {
-            'revenue': 130000,
-            'sales': 30,
-            'remainder': 70
-        },
-        '23.12.2020': {
-            'revenue': 150000,
-            'sales': 30,
-            'remainder': 40
-        },
-        '22.12.2020': {
-            'revenue': 120000,
-            'sales': 40,
-            'remainder': 120
-        },
-        '21.12.2020': {
-            'revenue': 100000,
-            'sales': 20,
-            'remainder': 100
-        },
-        '20.12.2020': {
-            'revenue': 135000,
-            'sales': 20,
-            'remainder': 80
-        },
-        '19.12.2020': {
-            'revenue': 170000,
-            'sales': 45,
-            'remainder': 140
-        },
-    }
+    ### Метод получения данных для лайт версии карточки товара(расширение). ###
+    start = time.time()
+
+    body = json.loads(request.body.decode('utf-8'))
+    goodsId = body.get('goodsId')
+    limit = body.get('period')
+
+    if limit == None:
+        limit = 7
+
+    cursor = connection.cursor();
+
+    cursor.execute('''
+        SELECT
+            cur_goods.date,
+            cur_goods.sales,
+            cur_goods.discounted_price,
+            cur_stock.quantity as remainder
+        FROM (
+        	SELECT
+                DISTINCT ON (date) date,
+                sales,
+                discounted_price
+            FROM goods_stat
+        	WHERE goods_id = %s
+            GROUP BY id, date
+        	ORDER BY date DESC
+            LIMIT %s
+        	) AS cur_goods
+        LEFT JOIN (
+        	SELECT
+                DISTINCT ON (date) date,
+                quantity
+            FROM stock
+        	WHERE goods_id = %s
+            LIMIT %s
+        	) AS cur_stock
+        ON cur_goods.date = cur_stock.date
+        ORDER BY date DESC
+    ''', [goodsId, limit, goodsId, limit])
+
+    data = dictfetchall(cursor)
+
     context = {
-        'date': date,
+        'list': data,
     }
-    return JsonResponse(context)
+
+    print(time.time() - start)
+    return JsonResponse(OrderedDict(context))
 
 
 def goods_list(request):
@@ -583,4 +601,3 @@ def goods_list(request):
 
     # Render the HTML template index.html with the data in the context variable
     return JsonResponse(context)
-

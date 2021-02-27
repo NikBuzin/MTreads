@@ -14,9 +14,12 @@ import os
 import configparser
 # import MT.config as config
 
-config = configparser.ConfigParser()
-config.read("config.ini")
-
+try:
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+except ImportError:
+    pass
+    
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

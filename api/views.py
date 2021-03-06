@@ -222,29 +222,33 @@ def goods_lite(request):
             cur_goods.date,
             cur_goods.sales,
             cur_goods.discounted_price,
-            cur_stock.quantity as remainder
+            cur_stock.remainder
         FROM (
         	SELECT
-                DISTINCT ON (date) date,
+                DISTINCT ON (date) date::date,
                 sales,
                 discounted_price
             FROM goods_stat
         	WHERE goods_id = %s
-            GROUP BY id, date
         	ORDER BY date DESC
             LIMIT %s
         	) AS cur_goods
         LEFT JOIN (
-        	SELECT
-                DISTINCT ON (date) date,
-                quantity
-            FROM stock
-        	WHERE goods_id = %s
-            LIMIT %s
+			SELECT
+				DISTINCT ON (date::date) date::date,
+				stocks.remainder
+			FROM (
+				SELECT
+					date,
+					sum(quantity) as remainder
+				FROM stock
+				WHERE goods_id = %s
+				GROUP BY date
+			) AS stocks
         	) AS cur_stock
-        ON cur_goods.date = cur_stock.date
+        ON cur_goods.date = cur_stock.date::date
         ORDER BY date DESC
-    ''', [goodsId, limit, goodsId, limit])
+    ''', [goodsId, limit, goodsId])
 
     data = dictfetchall(cursor)
 
@@ -601,3 +605,59 @@ def goods_list(request):
 
     # Render the HTML template index.html with the data in the context variable
     return JsonResponse(context)
+
+@csrf_exempt
+def category_all(request):
+    ### Метод получения полного списка категорий по parent_id. ###
+    start = time.time()
+
+    cursor = connection.cursor();
+    cursor.execute('''
+        SELECT *
+        FROM category
+        WHERE parent_id IS NULL
+    ''')
+
+    data = dictfetchall(cursor)
+
+    context = {
+        'list': data,
+    }
+
+    print(time.time() - start)
+    return JsonResponse(OrderedDict(context))
+
+@csrf_exempt
+def category_path(request):
+    ### Метод получения пути для категории. ###
+    start = time.time()
+
+    body = json.loads(request.body.decode('utf-8'))
+    category_id = body.get('category_id')
+
+    context = {}
+
+    cursor = connection.cursor();
+    cursor.execute('''
+        WITH RECURSIVE r AS (
+            SELECT *
+            	FROM category
+            	WHERE id = %s
+            UNION
+            SELECT category.*
+            	FROM r, category
+            	WHERE category.id = r.parent_id
+        )
+        SELECT * FROM r;
+    ''', [category_id])
+    context['list'] = dictfetchall(cursor)
+
+    cursor.execute('''
+        SELECT *
+        FROM category
+        WHERE parent_id = %s
+    ''', [category_id])
+    context['childs'] = dictfetchall(cursor)
+
+    print(time.time() - start)
+    return JsonResponse(OrderedDict(context))

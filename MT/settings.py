@@ -16,7 +16,7 @@ import configparser
 
 # try:
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read(os.environ.get('config'))
 # except ImportError:
 #     pass
 
@@ -30,9 +30,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '1p-wd+_aneuflrcg@0%-ubn#c%557*!5(o0r(s#b1_fd8-o-px'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config["setting"]["DEBUG"]
 
-ALLOWED_HOSTS = ['api.mtrends.ru']
+ALLOWED_HOSTS = [config["setting"]["ALLOWED_HOST"]]
 
 # Application definition
 

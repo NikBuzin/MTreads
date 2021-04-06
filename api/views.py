@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from  django.db import models, connection
+from django.db import models, connection
+from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 from collections import OrderedDict
 
@@ -204,6 +205,56 @@ def goods_cart(request):
 
 
 @csrf_exempt
+def test_get_id(request):
+    start = time.time()
+    limit = 7
+    body = json.loads(request.body.decode('utf-8'))
+    goodsId = body.get('goodsId')
+    cursor = connection.cursor();
+    cursor.execute('''
+    SELECT
+            cur_goods.date,
+            cur_goods.sales,
+            cur_goods.discounted_price,
+            cur_stock.remainder
+        FROM (
+        	SELECT
+                DISTINCT ON (date) date::date,
+                sales,
+                discounted_price
+            FROM goods_stat
+        	WHERE goods_id = %s
+        	ORDER BY date DESC
+            LIMIT %s
+        	) AS cur_goods
+        inner JOIN (
+			SELECT
+				DISTINCT ON (date::date) date::date,
+				stocks.remainder
+			FROM (
+				SELECT
+					date,
+					sum(quantity) as remainder
+				FROM stock
+				WHERE goods_id = %s
+				GROUP BY date
+			) AS stocks
+        	) AS cur_stock
+        ON cur_goods.date = cur_stock.date::date
+        ORDER BY date DESC
+    ''', [goodsId, limit, goodsId])
+
+    data = dictfetchall(cursor)
+
+    context = {
+        'list': data,
+    }
+
+    print(time.time() - start)
+    return JsonResponse(OrderedDict(context))
+
+
+@csrf_exempt
 def goods_lite(request):
     ### Метод получения данных для лайт версии карточки товара(расширение). ###
     start = time.time()
@@ -213,7 +264,7 @@ def goods_lite(request):
     limit = body.get('period')
 
     if limit == None:
-        limit = 7
+        limit = 8
 
     cursor = connection.cursor();
 
@@ -250,14 +301,60 @@ def goods_lite(request):
         ORDER BY date DESC
     ''', [goodsId, limit, goodsId])
 
-    data = dictfetchall(cursor)
-
+    """data = dictfetchall(cursor)"""
+    test_data = get_all(cursor)
     context = {
-        'list': data,
+        'list': test_data,
     }
 
     print(time.time() - start)
     return JsonResponse(OrderedDict(context))
+
+
+def get_all(cursor):
+    data = cursor.fetchall()
+    result = []
+    array_sales = []
+    avg_sales = []
+    avg_sales_count = 0
+    desc = cursor.description
+    for day in range(len(data)):
+        if day !=len(data)-1:
+            array_sales.append(get_sales(data[day+1][3], data[day][3]))
+            if array_sales[day] >= 0:
+                avg_sales.append(array_sales[day])
+
+    for day in range(len(data)):
+        if day !=len(data)-1:
+            if array_sales[day]>=0:
+                result.append(
+                    {
+                        desc[0][0]: data[day][0],
+                        desc[1][0]: array_sales[day],
+                        desc[2][0]: data[day][2],
+                        desc[3][0]: data[day][3]
+                    }
+                )
+            else:
+                for sales in avg_sales:
+                    avg_sales_count += sales
+                avg_sales_count = round(avg_sales_count/len(avg_sales))
+                result.append(
+                    {
+                        desc[0][0]: data[day][0],
+                        desc[1][0]: avg_sales_count,
+                        desc[2][0]: data[day][2],
+                        desc[3][0]: data[day][3]
+                    }
+                )
+        else: continue
+    return result
+
+
+def get_sales(old_rem, now_rem):
+    sales = old_rem - now_rem
+    return sales
+
 
 @csrf_exempt
 def goods_list(request):

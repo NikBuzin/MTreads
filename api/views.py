@@ -302,10 +302,25 @@ def goods_lite(request):
     ''', [goodsId, limit, goodsId])
 
     """data = dictfetchall(cursor)"""
+
     test_data = get_all(cursor)
-    context = {
-        'list': test_data,
-    }
+    if len(test_data)>0:
+        context = {
+            'list': test_data,
+        }
+    else:
+        log = []
+        with open('Goods_not_found.txt') as f:
+            for line in f:
+                log.append([int(x) for x in line.split()])
+        f.close()
+        if [goodsId] not in log:
+            f = open('Goods_not_found.txt', 'a')
+            f.write(str(goodsId) + '\n')
+            f.close()
+        context = {
+            'list': 'Error: goods not found',
+        }
 
     print(time.time() - start)
     return JsonResponse(OrderedDict(context))

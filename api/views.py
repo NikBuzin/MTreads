@@ -264,7 +264,7 @@ def goods_lite(request):
     limit = body.get('period')
 
     if limit == None:
-        limit = 8
+        limit = 31
 
     cursor = connection.cursor();
 
@@ -331,43 +331,82 @@ def get_all(cursor):
     result = []
     array_sales = []
     avg_sales = []
+    remainder = []
+    discount_price = []
     avg_sales_count = 0
     desc = cursor.description
-    for day in range(len(data)):
+
+    for day in range(0, len(data)):
+        discount_price.append(data[day][2])
+
+    for day in range(0, len(data)):
+        remainder.append(data[day][3])
+
+    remainder = avg_array(remainder)
+    discount_price = avg_array(discount_price)
+
+    for day in range(0,len(data)):
         if day !=len(data)-1:
-            array_sales.append(get_sales(data[day+1][3], data[day][3]))
+            array_sales.append(-1*get_sales(remainder[day], remainder[day+1]))
             if array_sales[day] >= 0:
                 avg_sales.append(array_sales[day])
 
-    for day in range(len(data)):
-        if day !=len(data)-1:
-            if array_sales[day]>=0:
-                result.append(
-                    {
-                        desc[0][0]: data[day][0],
-                        desc[1][0]: array_sales[day],
-                        desc[2][0]: data[day][2],
-                        desc[3][0]: data[day][3]
-                    }
-                )
-            else:
-                for sales in avg_sales:
-                    avg_sales_count += sales
-                avg_sales_count = round(avg_sales_count/len(avg_sales))
-                result.append(
-                    {
-                        desc[0][0]: data[day][0],
-                        desc[1][0]: avg_sales_count,
-                        desc[2][0]: data[day][2],
-                        desc[3][0]: data[day][3]
-                    }
-                )
-        else: continue
+    array_sales = avg_array(array_sales)
+
+    for day in range(len(array_sales)):
+        result.append(
+            {
+                desc[0][0]: data[day][0],
+                desc[1][0]: abs(array_sales[day]),
+                desc[2][0]: discount_price[day],
+                desc[3][0]: remainder[day]
+            }
+        )
     return result
 
 
+'''Усреднение значений массива'''
+
+
+def avg_array(array):
+    mean_array = mean(array)
+    for day in range(0, len(array)):
+        if type(array[day])!= int:
+            array[day] = 0
+        if int(array[day]) > mean_array+mean_array*0.95 or int(array[day]) < mean_array - mean_array*0.95:
+            change_array(array, day)
+    return array
+
+
+'''Удаление из массива значения с сохранением размерности и вставкой на то место среднего'''
+
+
+def change_array(array, day):
+    temp_array = array.copy()
+    temp_array.pop(day)
+    array[day] = mean(temp_array)
+    return array
+
+
+'''Вычисление среднего значения в массиве'''
+
+
+def mean(array):
+    mean_result = 0
+    for i in range(0,len(array)):
+        if type(array[i]) == int:
+            mean_result+=array[i]
+    mean_result/=len(array)
+    return int(mean_result)
+
+
+'''Получание количества продаж на основе остатков на складе'''
+
+
 def get_sales(old_rem, now_rem):
-    sales = old_rem - now_rem
+    if type(old_rem) == int and type(now_rem) == int:
+        sales = old_rem - now_rem
+    else: sales = 0
     return sales
 
 
